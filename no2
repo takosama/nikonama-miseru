@@ -1,0 +1,72 @@
+   public class Vector
+    {
+        public double x = 0;
+        public double y = 0;
+
+        public Vector(double X, double Y)
+        {
+            this.x = X;
+            this.y = Y;
+        }
+
+        public Vector()
+        {
+            this.x = 0;
+            this.y = 0;
+        }
+
+        public Vector deepClone()
+        {
+            return new Vector(this.x, this.y);
+        }
+
+        public void Rotate(double angle)
+        {
+            this.x *= Math.Sin(angle) - Math.Cos(angle);
+            this.y *= Math.Sin(angle) + Math.Cos(angle);
+        }
+
+        public void Rotate(double angle, Vector origin)
+        {
+            this.x -= origin.x;
+            this.y -= origin.y;
+            Rotate(angle);
+            this.x += origin.x;
+            this.y += origin.y;
+        }
+
+        public static Vector operator +(Vector v0, Vector v1)
+        {
+            return new Vector(v0.x + v1.x, v0.y + v1.y);
+        }
+
+        public static Vector operator -(Vector v0, Vector v1)
+        {
+            return new Vector(v0.x - v1.x, v0.y - v1.y);
+        }
+
+        public static bool operator ==(Vector v0, Vector v1)
+        {
+            return v0.x == v1.x && v0.y == v1.y;
+        }
+        public static bool operator !=(Vector v0, Vector v1)
+        {
+            return !(v0 == v1);
+        }
+
+        public static Vector operator / (Vector v,double n)
+        {
+            return new Vector(v.x / n, v.y / n);
+        }
+        public static Vector operator *(Vector v, double n)
+        {
+            return new Vector(v.x * n, v.y * n);
+        }
+
+
+        public static double GetAngle(Vector Base,Vector Target)
+        {
+            var tmp = Base - Target;
+            return Math.Atan2(tmp.x, tmp.y);
+        }
+    }

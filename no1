@@ -1,0 +1,214 @@
+using DxLibDLL;
+using KCSK;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using TakosLib_Core;
+
+class GameObjectControler
+{
+    public static GameObjct[] DrectrtArrey { get; } = new GameObjct[256];
+    static bool RunFlag = false;
+    static public void Start()
+    {
+        RunFlag = true;
+        Task.Run(() =>
+        {
+            while (RunFlag)
+            {
+                Refresh();
+                Thread.Sleep(1000 / 60);
+            }
+        });
+    }
+
+    static public void Refresh()
+    {
+        RefreshMouse();
+        RunCallback();
+        AnimationController.Refresh();
+    }
+
+    static public void RunCallback()
+    {
+        //if MousePushed then run callback 
+        if (!IsMousePush) return;
+
+        var tmp = DrectrtArrey.Where(x => x != null)
+            .Where(x => x.IsCheck == true)
+            .Where(x => Collision.BoxCollision.IsOvverlapping(x.Area, new Vector(mouse_X, mouse_Y)) == true)
+            .Where(x => x.CallBack_IsClicked != null);
+
+        foreach (var n in tmp)
+            n.CallBack_IsClicked();
+    }
+
+    static bool IsMouseDown = false;
+    static bool IsMouseDownB = false;
+    static bool IsMousePush = false;
+    static int mouse_X = 0;
+    static int mouse_Y = 0;
+    static public void RefreshMouse()
+    {
+        IsMouseDownB = IsMouseDown;
+        if ((DX.GetMouseInput() & DX.MOUSE_INPUT_LEFT) != 0)
+            IsMouseDown = true;
+        else
+            IsMouseDown = false;
+
+        if (IsMouseDown == true && IsMouseDownB == false)
+            IsMousePush = true;
+        else
+            IsMousePush = false;
+
+        DX.GetMousePoint(out mouse_X, out mouse_Y);
+    }
+
+    static public void Stop()
+    {
+        RunFlag = false;
+    }
+
+    static public int Add(GameObjct go)
+    {
+        for (int i = 0; i < 256; i++)
+        {
+            var tmp = DrectrtArrey[i];
+            if (tmp == null)
+            {
+                DrectrtArrey[i] = go;
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    static public void Delete(int ID)
+    {
+        DrectrtArrey[ID] = null;
+    }
+}
+
+
+class AnimationController
+{
+  static  Animation[] AnimationArrey = new Animation[256];
+    public static int Add(Animation a)
+    {
+        for(int i=0;i<256;i++)
+        {
+            if(AnimationArrey[i]==null || AnimationArrey[i].IsDied==true)
+            {
+                AnimationArrey[i] = a;
+                return i;
+            }
+        }
+        return -1;
+    }
+    public static void Refresh()
+    {
+        for (int i = 0; i < 256; i++)
+            if (AnimationArrey[i] != null && AnimationArrey[i].IsDied)
+                AnimationArrey[i] = null;
+        for (int i = 0; i < 256; i++)
+            if (AnimationArrey[i] != null && AnimationArrey[i].IsRunning)
+                AnimationArrey[i].Refresh();
+
+    }
+static   public void Delete(int ID)
+    {
+        AnimationArrey[ID] = null;
+    }
+}
+    class Animation
+{ 
+    Path[] PathArrey = null;
+ public   bool IsRunning = false;
+    int PathCount=0;
+    int ID=-1;
+ public   bool IsDied = false;
+    public GameObjct go=null;
+
+    public void Delete()
+    {
+        AnimationController.Delete(this.ID);
+    }
+    public Animation(Path[] PathArrey)
+
+    {
+        this.PathArrey = PathArrey;
+      this.ID=  AnimationController.Add(this);
+    }
+
+    public void Refresh()
+    {
+        if (!IsRunning)
+        {
+            IsDied = true;
+            return;
+      }
+        Vector MoveDistance = PathArrey[PathCount].Refresh().deepClone() ;
+        
+if (MoveDistance==null)
+            if (PathArrey[PathCount].IsRunning)
+            {
+                PathCount++;
+                if (PathCount == PathArrey.Count())
+                {
+                    IsDied = true;
+                    return;
+                }
+                else
+                {
+                    Refresh();
+                }
+            }
+        go.Point += MoveDistance;
+    }
+    public void Start()
+    {
+        IsRunning = true;
+        PathArrey[0].Start();
+    }
+
+    public class Path
+    {
+        Node StartNode = null;
+        Node EndNode = null;
+        int LastFlame = 0;
+        int FlameCount = 0;
+      public  bool IsRunning = false;
+        public Path(Node StartNode, Node EndNode, int LastFlame)
+        {
+            this.StartNode = StartNode;
+            this.EndNode = EndNode;
+            this.LastFlame = LastFlame;
+        }
+
+        public void Start()
+        {
+            IsRunning = true;
+        }
+        public Vector Refresh()
+        {
+            if (!IsRunning || FlameCount >= LastFlame)
+            {
+                IsRunning = false;
+                return null;
+            }
+
+            FlameCount++;
+            return  (StartNode.Position - EndNode.Position)/LastFlame;
+        }
+    }
+
+    public class Node
+    {
+        public Node(Vector v)
+        {
+            this.Position = v.deepClone();
+        }
+     public   Vector Position;
+    
+    }
+}
